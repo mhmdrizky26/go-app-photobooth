@@ -1,0 +1,43 @@
+# --- Secrets / env files ---
+.env
+.env.*
+backend/.env
+backend/.env.*
+!.env.example
+!backend/.env.example
+
+# --- Go build artifacts ---
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.cover
+coverage.out
+
+# --- Go workspace/cache (local) ---
+backend/bin/
+backend/dist/
+backend/tmp/
+
+# --- Runtime/generated storage ---
+backend/storage/frames/
+backend/storage/sessions/
+
+# --- Logs ---
+*.log
+backend/*.log
+
+# --- OS / Editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Frontend local artifacts ---
+frontend/node_modules/
+frontend/dist/
+frontend/.cache/

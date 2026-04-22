@@ -1,0 +1,565 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photobooth — Jonas Photo</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    /* ─── Landing Specific ─────────────────────────────────────────────────── */
+    .landing-wrap {
+      width: 100%;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Left panel */
+    .landing-left {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 40px 48px;
+      position: relative;
+      z-index: 10;
+      border-right: 1px solid var(--border);
+    }
+
+    .landing-tagline {
+      margin-top: auto;
+      margin-bottom: 60px;
+    }
+
+    .landing-title {
+      font-family: var(--font-display);
+      font-size: clamp(56px, 7vw, 88px);
+      font-weight: 300;
+      line-height: 0.95;
+      color: var(--cream);
+      letter-spacing: -0.03em;
+      margin-bottom: 32px;
+    }
+
+    .landing-title em {
+      font-style: italic;
+      color: var(--gold);
+      display: block;
+    }
+
+    .landing-desc {
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--text-secondary);
+      max-width: 360px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+    }
+
+    .landing-cta {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .btn-start {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--gold);
+      color: var(--on-accent);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 18px 40px;
+      border-radius: 100px;
+      border: none;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .btn-start:hover {
+      background: var(--gold-light);
+      transform: translateX(4px);
+      box-shadow: 0 12px 32px #01395e28;
+    }
+
+    .btn-start:hover .btn-arrow {
+      transform: translateX(4px);
+    }
+
+    .btn-arrow {
+      display: inline-flex;
+      transition: transform 0.3s ease;
+    }
+
+    .landing-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .landing-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .landing-logo {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+    }
+
+    .landing-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* Right panel */
+    .landing-right {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: var(--bg-card);
+    }
+
+    /* Decorative strip preview */
+    .strip-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transform: rotate(-3deg) translateY(-10px);
+      opacity: 0;
+      animation: stripReveal 1s 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes stripReveal {
+      from { opacity: 0; transform: rotate(-3deg) translateY(20px); }
+      to   { opacity: 1; transform: rotate(-3deg) translateY(-10px); }
+    }
+
+    .strip-frame {
+      width: 220px;
+      height: 148px;
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .strip-frame-inner {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    /* Shimmer animation untuk frame kosong */
+    .strip-frame::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        105deg,
+        transparent 40%,
+        #ffffff04 50%,
+        transparent 60%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .strip-border {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 24px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      gap: 5px;
+    }
+
+    .strip-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--border-light);
+    }
+
+    .strip-label {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* Floating badge */
+    .floating-badge {
+      position: absolute;
+      bottom: 80px;
+      right: 48px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: floatBadge 1.2s 0.9s ease forwards;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    @keyframes floatBadge {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .floating-badge-label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .floating-badge-value {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    /* Glow positions */
+    .glow-orb--top-right {
+      top: -100px;
+      right: -100px;
+    }
+
+    .glow-orb--bottom-left {
+      bottom: -100px;
+      left: -100px;
+    }
+
+    /* Entry animations */
+    .animate-up {
+      opacity: 0;
+      animation: animUp 0.7s ease forwards;
+    }
+
+    .animate-up:nth-child(1) { animation-delay: 0.1s; }
+    .animate-up:nth-child(2) { animation-delay: 0.2s; }
+    .animate-up:nth-child(3) { animation-delay: 0.35s; }
+    .animate-up:nth-child(4) { animation-delay: 0.5s; }
+
+    @keyframes animUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Info pills */
+    .info-pills {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .info-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .info-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+
+    @media (max-width: 1024px) {
+      .landing-left {
+        padding: 32px 28px;
+      }
+
+      .landing-right {
+        padding: 24px;
+      }
+
+      .floating-badge {
+        right: 24px;
+        bottom: 32px;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .landing-wrap {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+      }
+
+      .landing-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        justify-content: flex-start;
+        gap: 24px;
+      }
+
+      .landing-tagline {
+        margin: 0;
+      }
+
+      .landing-title {
+        font-size: clamp(42px, 12vw, 70px);
+      }
+
+      .landing-desc {
+        max-width: 100%;
+        margin-bottom: 24px;
+      }
+
+      .landing-right {
+        min-height: 360px;
+      }
+
+      .floating-badge {
+        right: 16px;
+        bottom: 16px;
+        padding: 12px 14px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .landing-left {
+        padding: 22px 16px;
+      }
+
+      .landing-cta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .btn-start {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .info-pills {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .strip-frame {
+        width: 180px;
+        height: 122px;
+      }
+    }
+
+    @media (min-width: 1600px) {
+      .landing-left {
+        padding-left: 72px;
+        padding-right: 72px;
+      }
+
+      .strip-frame {
+        width: 250px;
+        height: 168px;
+      }
+    }
+
+    @media (max-height: 760px) {
+      .landing-left {
+        padding-top: 22px;
+        padding-bottom: 22px;
+      }
+
+      .landing-title {
+        margin-bottom: 18px;
+      }
+
+      .landing-desc {
+        margin-bottom: 18px;
+      }
+
+      .landing-tagline {
+        margin-bottom: 0;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 520px) {
+      .landing-wrap {
+        grid-template-columns: 1.1fr 0.9fr;
+      }
+
+      .landing-left {
+        padding: 12px 20px;
+      }
+
+      .landing-title {
+        font-size: clamp(30px, 7vh, 50px);
+      }
+
+      .landing-right {
+        min-height: 260px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="landing-wrap">
+
+    <!-- ─── Left Panel ─────────────────────────────────────────────────── -->
+    <div class="landing-left">
+
+      <!-- Logo -->
+      <div class="landing-footer animate-up">
+        <span class="landing-logo">Jonas Photo</span>
+        <span class="landing-meta">Est. 2026</span>
+      </div>
+
+      <!-- Main tagline -->
+      <div class="landing-tagline">
+        <div class="animate-up">
+          <p class="section-subtitle" style="margin-bottom: 20px;">
+            Premium Photo Experience
+          </p>
+        </div>
+
+        <h1 class="landing-title animate-up">
+          Capture<br/>
+          <em>moments</em><br/>
+          beautifully.
+        </h1>
+
+        <div class="animate-up">
+          <div class="info-pills">
+            <div class="info-pill">
+              <div class="info-pill-dot"></div>
+              3 Strip Layout
+            </div>
+            <div class="info-pill">
+              <div class="info-pill-dot" style="background: var(--blush)"></div>
+              Instant Download
+            </div>
+          </div>
+
+          <p class="landing-desc">
+            Sesi foto premium dengan berbagai pilihan frame eksklusif.
+            Abadikan momen bersama orang-orang spesial dalam hitungan menit.
+          </p>
+        </div>
+
+        <div class="landing-cta animate-up">
+          <a href="category.html" class="btn-start">
+            Mulai Sekarang
+            <span class="btn-arrow">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor"
+                  stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </a>
+          <span class="landing-note">Mulai dari Rp 35.000</span>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="opacity:0; animation: animUp 0.7s 0.6s forwards;">
+        <p class="landing-meta">
+          © 2026 Jonas Photo · All rights reserved
+        </p>
+      </div>
+
+    </div>
+
+    <!-- ─── Right Panel ─────────────────────────────────────────────────── -->
+    <div class="landing-right">
+
+      <!-- Background glows -->
+      <div class="glow-orb glow-orb--gold glow-orb--top-right"></div>
+      <div class="glow-orb glow-orb--blush glow-orb--bottom-left"></div>
+
+      <!-- Strip preview (dekoratif) -->
+      <div class="strip-preview">
+        <!-- Slot 1 -->
+        <div class="strip-frame">
+          <div class="strip-border">
+            <div class="strip-dot"></div>
+            <div class="strip-dot"></div>
+          </div>
+          <div class="strip-frame-inner">foto 1</div>
+          <div class="strip-label">01 / 03</div>
+        </div>
+
+        <!-- Slot 2 -->
+        <div class="strip-frame">
+          <div class="strip-border">
+            <div class="strip-dot"></div>
+            <div class="strip-dot"></div>
+          </div>
+          <div class="strip-frame-inner">foto 2</div>
+          <div class="strip-label">02 / 03</div>
+        </div>
+
+        <!-- Slot 3 -->
+        <div class="strip-frame">
+          <div class="strip-border">
+            <div class="strip-dot"></div>
+            <div class="strip-dot"></div>
+          </div>
+          <div class="strip-frame-inner">foto 3</div>
+          <div class="strip-label">03 / 03</div>
+        </div>
+      </div>
+
+      <!-- Floating info badge -->
+      <div class="floating-badge">
+        <span class="floating-badge-label">Sesi Tersedia</span>
+        <span class="floating-badge-value">Regular & VIP</span>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="assets/js/session.js"></script>
+  <script src="assets/js/index-page.js"></script>
+</body>
+</html>

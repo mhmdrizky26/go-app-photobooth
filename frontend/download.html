@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Download Foto — Jonas Photo</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <!-- QR Code library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    .download-wrap { width:100vw; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+    .download-main { flex:1; display:grid; grid-template-columns:1fr 1fr; overflow:hidden; }
+
+    /* ─── Left: QR Panel ─────────────────────────────────────────────── */
+    .qr-panel {
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:48px; position:relative;
+      overflow:hidden; border-right:1px solid var(--border);
+      gap:28px;
+    }
+    .qr-panel::before {
+      content:''; position:absolute; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      width:500px; height:500px;
+      background:radial-gradient(circle,#01395e08 0%,transparent 70%);
+      border-radius:50%; pointer-events:none;
+    }
+
+    .qr-wrap {
+      position:relative; z-index:10;
+      display:flex; flex-direction:column;
+      align-items:center; gap:20px;
+    }
+
+    .qr-label {
+      font-size:11px; font-weight:500;
+      letter-spacing:0.15em; text-transform:uppercase;
+      color:var(--gold); animation:animUp 0.5s 0.2s ease both;
+    }
+
+    /* QR Box */
+    .qr-box {
+      width:clamp(220px, 36vw, 320px);
+      aspect-ratio: 1/1;
+      background:#fff; border-radius:16px;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 0 0 1px var(--border), 0 20px 60px #00000050;
+      overflow:hidden;
+      animation:animUp 0.6s 0.3s ease both;
+      padding: clamp(10px, 2vw, 16px);
+    }
+    .qr-box canvas, .qr-box img {
+      width: 100% !important;
+      height: 100% !important;
+      border-radius:8px;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+
+    /* Link galeri */
+    .gallery-link-wrap {
+      display:flex; flex-direction:column;
+      align-items:center; gap:10px;
+      animation:animUp 0.6s 0.45s ease both;
+    }
+    .gallery-link-label {
+      font-size:11px; color:var(--text-muted);
+      letter-spacing:0.08em; text-transform:uppercase;
+    }
+    .gallery-link {
+      font-size:12px; color:var(--gold);
+      word-break:break-all; text-align:center;
+      text-decoration:none; line-height:1.5;
+      padding:10px 16px;
+      background:var(--bg-card);
+      border:1px solid var(--border-light);
+      border-radius:var(--radius-md);
+      max-width:280px;
+    }
+    .gallery-link:hover { border-color:var(--gold); }
+
+    .btn-copy {
+      display:flex; align-items:center; gap:8px;
+      padding:10px 24px; background:transparent;
+      color:var(--cream); border:1px solid var(--border-light);
+      border-radius:var(--radius-md);
+      font-family:var(--font-body); font-size:12px;
+      cursor:pointer; transition:var(--transition);
+      letter-spacing:0.04em;
+    }
+    .btn-copy:hover { border-color:var(--gold); color:var(--gold); background:var(--gold-dim); }
+    .btn-copy.copied { border-color:var(--success); color:var(--success); }
+
+    .scan-hint {
+      font-size:12px; color:var(--text-muted);
+      text-align:center; line-height:1.6;
+      animation:animUp 0.6s 0.55s ease both;
+    }
+
+    /* ─── Right: Actions ──────────────────────────────────────────────── */
+    .actions-panel {
+      display:flex; flex-direction:column; justify-content:center;
+      padding:48px 52px; gap:28px; overflow-y:auto;
+    }
+    .actions-header { animation:animUp 0.6s 0.3s ease both; }
+    .actions-header p { font-size:11px; font-weight:500; letter-spacing:0.15em; text-transform:uppercase; color:var(--gold); margin-bottom:10px; }
+    .actions-header h2 { font-family:var(--font-display); font-size:clamp(36px,4vw,52px); font-weight:300; color:var(--cream); letter-spacing:-0.02em; line-height:1.05; margin-bottom:12px; }
+    .actions-header h2 em { font-style:italic; color:var(--gold); }
+    .actions-header-desc { font-size:14px; color:var(--text-secondary); font-weight:300; line-height:1.7; }
+
+    .session-info { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px 24px; display:flex; flex-direction:column; gap:12px; animation:animUp 0.6s 0.45s ease both; }
+    .session-info-row { display:flex; align-items:center; justify-content:space-between; }
+    .session-info-label { font-size:12px; color:var(--text-muted); }
+    .session-info-value { font-size:12px; color:var(--cream); font-weight:500; }
+
+    /* Timer */
+    .timer-section { animation:animUp 0.6s 0.55s ease both; }
+    .timer-label { font-size:11px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px; }
+    .timer-bar-wrap { background:var(--bg-elevated); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
+    .timer-bar-top { display:flex; align-items:center; justify-content:space-between; }
+    .timer-countdown { font-family:var(--font-display); font-size:28px; font-weight:300; color:var(--cream); letter-spacing:-0.02em; transition:color 0.3s; }
+    .timer-countdown.warning { color:var(--blush); }
+    .timer-desc { font-size:12px; color:var(--text-muted); text-align:right; line-height:1.4; }
+    .timer-progress { width:100%; height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+    .timer-progress-fill { height:100%; background:var(--gold); border-radius:2px; transition:width 1s linear,background 0.3s; width:100%; }
+    .timer-progress-fill.warning { background:var(--blush); }
+
+    .thankyou-section { animation:animUp 0.6s 0.65s ease both; }
+    .thankyou-text { font-family:var(--font-display); font-size:15px; font-style:italic; color:var(--text-secondary); line-height:1.6; }
+    .thankyou-text em { color:var(--gold); }
+
+    /* Redirect */
+    .redirect-overlay { display:none; position:fixed; inset:0; background:var(--bg); z-index:100; flex-direction:column; align-items:center; justify-content:center; gap:24px; }
+    .redirect-overlay.show { display:flex; }
+    .redirect-logo { font-family:var(--font-display); font-size:28px; font-weight:500; color:var(--gold); }
+    .redirect-msg { font-family:var(--font-display); font-size:20px; font-weight:300; color:var(--text-secondary); font-style:italic; }
+    .redirect-spinner { width:32px; height:32px; border:2px solid var(--border-light); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; }
+
+    @keyframes animUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    @media (max-width: 1024px) {
+      .qr-panel,
+      .actions-panel {
+        padding: 28px 22px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .download-main {
+        grid-template-columns: 1fr;
+      }
+
+      .qr-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .actions-panel {
+        gap: 18px;
+      }
+
+      .gallery-link,
+      .scan-hint {
+        max-width: 92vw;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .qr-panel,
+      .actions-panel {
+        padding: 16px 12px;
+      }
+
+      .qr-box {
+        width: min(78vw, 300px);
+        min-width: 220px;
+      }
+
+      .btn-copy {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .timer-bar-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+
+      .timer-desc {
+        text-align: left;
+      }
+    }
+
+    @media (min-width: 1600px) {
+      .download-main {
+        grid-template-columns: 0.95fr 1.05fr;
+      }
+
+      .qr-box {
+        width: 320px;
+      }
+    }
+
+    @media (max-height: 760px) {
+      .qr-panel,
+      .actions-panel {
+        padding-top: 12px;
+        padding-bottom: 12px;
+        gap: 12px;
+      }
+
+      .qr-box {
+        width: min(36vh, 260px);
+        min-width: 180px;
+      }
+
+      .actions-header h2 {
+        font-size: clamp(26px, 5vh, 40px);
+        margin-bottom: 8px;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 520px) {
+      .download-main {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .qr-panel,
+      .actions-panel {
+        padding: 8px 10px;
+      }
+
+      .qr-wrap {
+        gap: 10px;
+      }
+
+      .qr-box {
+        width: min(42vh, 240px);
+        min-width: 170px;
+      }
+
+      .session-info {
+        padding: 10px;
+        gap: 6px;
+      }
+
+      .timer-bar-wrap {
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="download-wrap">
+    <nav class="nav">
+      <span class="nav-logo">Jonas Photo</span>
+      <div class="nav-steps">
+        <div class="nav-step done"></div>
+        <div class="nav-step done"></div>
+        <div class="nav-step done"></div>
+        <div class="nav-step done"></div>
+        <div class="nav-step done"></div>
+        <div class="nav-step active"></div>
+      </div>
+      <span class="label">Langkah 6 / 6</span>
+    </nav>
+
+    <div class="download-main">
+
+      <!-- Left: QR Code -->
+      <div class="qr-panel">
+        <div class="qr-wrap">
+          <span class="qr-label">Scan untuk lihat & download foto</span>
+
+          <!-- QR Box -->
+          <div class="qr-box" id="qrBox"></div>
+
+          <!-- Link gallery -->
+          <div class="gallery-link-wrap">
+            <span class="gallery-link-label">atau buka link ini</span>
+            <a class="gallery-link" id="galleryLink" href="#" target="_blank">—</a>
+            <button class="btn-copy" id="copyBtn" onclick="copyLink()">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+              Salin Link
+            </button>
+          </div>
+
+          <p class="scan-hint">
+            Scan QR dengan HP kamu untuk<br/>
+            melihat dan mendownload semua foto
+          </p>
+        </div>
+      </div>
+
+      <!-- Right: Info + Timer -->
+      <div class="actions-panel">
+
+        <div class="actions-header">
+          <p>Step 06 — Selesai!</p>
+          <h2>Foto kamu<br/>sudah <em>jadi!</em></h2>
+          <p class="actions-header-desc">
+            Scan QR code atau buka link untuk melihat semua foto dan strip kamu.
+            Link berlaku selama 3 hari.
+          </p>
+        </div>
+
+        <div class="session-info">
+          <div class="session-info-row">
+            <span class="session-info-label">Paket</span>
+            <span class="session-info-value" id="infoCategory">—</span>
+          </div>
+          <div class="session-info-row">
+            <span class="session-info-label">Frame</span>
+            <span class="session-info-value" id="infoFrame">—</span>
+          </div>
+          <div class="session-info-row">
+            <span class="session-info-label">Jumlah Foto</span>
+            <span class="session-info-value" id="infoPhotoCount">—</span>
+          </div>
+          <div class="session-info-row">
+            <span class="session-info-label">Link berlaku hingga</span>
+            <span class="session-info-value" id="infoExpiry">—</span>
+          </div>
+        </div>
+
+        <div class="timer-section">
+          <p class="timer-label">Sesi berakhir dalam</p>
+          <div class="timer-bar-wrap">
+            <div class="timer-bar-top">
+              <span class="timer-countdown" id="timerDisplay">01:00</span>
+              <span class="timer-desc">Halaman akan kembali ke<br/>landing page otomatis</span>
+            </div>
+            <div class="timer-progress">
+              <div class="timer-progress-fill" id="timerFill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="thankyou-section">
+          <p class="thankyou-text">
+            Terima kasih sudah menggunakan <em>Jonas Photo</em> —<br/>
+            semoga momen indah ini selalu dikenang. ✦
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Redirect overlay -->
+  <div class="redirect-overlay" id="redirectOverlay">
+    <span class="redirect-logo">Jonas Photo</span>
+    <div class="redirect-spinner"></div>
+    <span class="redirect-msg">Sampai jumpa lagi...</span>
+  </div>
+
+  <script src="assets/js/session.js"></script>
+  <script src="assets/js/shared.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/download-page.js"></script>
+</body>
+</html>

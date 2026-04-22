@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Gallery Foto — Jonas Photo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=DM+Sans:wght@300;400;500&display=swap');
+  :root {
+    --bg:#dcdddd; --bg-card:#f4f5f4; --bg-el:#eceeed; --border:#c0c2c1;
+    --gold:#01395e; --gold-l:#0a507f; --cream:#01395e; --muted:#7c8793;
+    --secondary:#5d6d7c; --blush:#8a96ae; --radius:12px; --on-accent:#dcdddd;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--cream); min-height:100vh; }
+  .header { position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border); padding:16px 20px; display:flex; justify-content:space-between; background:var(--bg); }
+  .header-logo { font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--gold); }
+  .header-meta { font-size:11px; color:var(--secondary); text-align:right; letter-spacing:.06em; }
+  .main { display:grid; grid-template-columns:240px 1fr; min-height:calc(100vh - 57px); }
+  .strip-panel { border-right:1px solid var(--border); padding:24px 20px; background:var(--bg-card); display:flex; flex-direction:column; gap:16px; }
+  .strip-label { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .strip-container { width:160px; aspect-ratio:1/3; border-radius:6px; overflow:hidden; background:#dcdddd; box-shadow:0 12px 40px #01395e20; }
+  .strip-container img { width:100%; height:100%; object-fit:contain; display:block; }
+  .strip-placeholder { width:100%; height:100%; display:flex; justify-content:center; align-items:center; color:var(--muted); text-align:center; padding:12px; font-size:12px; }
+  .btn-strip-dl { display:none; align-items:center; justify-content:center; gap:8px; width:100%; padding:12px 16px; border:none; border-radius:var(--radius); background:var(--gold); color:var(--on-accent); font-size:12px; letter-spacing:.06em; text-transform:uppercase; text-decoration:none; }
+  .btn-strip-dl:hover { background:var(--gold-l); }
+  .info-card { width:100%; background:var(--bg-el); border:1px solid var(--border); border-radius:var(--radius); padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .info-key { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .info-val { font-size:13px; color:var(--cream); }
+  .expiry-warn { font-size:11px; color:var(--blush); line-height:1.5; }
+  .photos-panel { padding:24px 20px; }
+  .photos-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; margin-bottom:4px; }
+  .photos-sub { font-size:13px; color:var(--secondary); margin-bottom:20px; }
+  .photo-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px; }
+  .photo-card { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; background:var(--bg-card); }
+  .photo-thumb { position:relative; aspect-ratio:4/3; background:var(--bg-el); }
+  .photo-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-num { position:absolute; bottom:6px; left:6px; background:#00000088; color:#fff; font-size:10px; padding:2px 8px; border-radius:999px; }
+  .btn-dl { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:10px; border-top:1px solid var(--border); color:var(--secondary); text-decoration:none; font-size:12px; }
+  .btn-dl:hover { color:var(--gold); background:var(--bg-el); }
+  .empty { grid-column:1/-1; text-align:center; color:var(--muted); padding:60px 20px; }
+  .error-wrap { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:24px; }
+  .error-wrap h1 { font-family:'Cormorant Garamond',serif; font-size:34px; font-weight:300; }
+  .error-wrap p { color:var(--secondary); }
+  .back-link { color:var(--gold); text-decoration:none; }
+  @media (max-width:900px) {
+    .main { grid-template-columns:200px 1fr; }
+    .strip-panel { padding:16px 12px; }
+    .strip-container { width:136px; }
+    .photos-panel { padding:16px 12px; }
+    .photo-grid { grid-template-columns:repeat(auto-fill, minmax(136px, 1fr)); }
+  }
+  @media (max-width:640px) {
+    .main { grid-template-columns:1fr; }
+    .strip-panel {
+      border-right:none;
+      border-bottom:1px solid var(--border);
+      align-items:center;
+      padding-left:16px;
+      padding-right:16px;
+    }
+    .strip-label { width:100%; max-width:300px; text-align:center; }
+    .strip-container { margin:0 auto; }
+    .btn-strip-dl,
+    .info-card,
+    .expiry-warn { width:100%; max-width:300px; }
+    .expiry-warn { text-align:center; }
+    .photo-grid { grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); }
+  }
+  @media (max-width:420px) {
+    .header { padding:12px; }
+    .header-logo { font-size:18px; }
+    .strip-container { width:120px; }
+    .photo-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+    .btn-strip-dl,
+    .btn-dl { min-height:44px; }
+  }
+  @media (min-width:1600px) {
+    .main { grid-template-columns:280px 1fr; }
+    .strip-panel { padding:28px 24px; }
+    .strip-container { width:190px; }
+    .photos-panel { padding:28px 24px; }
+    .photo-grid { grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); }
+  }
+  @media (max-height:700px) {
+    .header { padding:10px 16px; }
+    .strip-panel,
+    .photos-panel { padding-top:12px; padding-bottom:12px; }
+    .strip-container { width:126px; }
+  }
+  @media (orientation:landscape) and (max-height:520px) {
+    .main { grid-template-columns:180px 1fr; min-height:calc(100vh - 45px); }
+    .header { padding:8px 12px; }
+    .strip-container { width:104px; }
+    .info-card { padding:10px; gap:6px; }
+    .photo-grid { grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<header class="header">
+  <span class="header-logo">Jonas Photo</span>
+  <div class="header-meta">
+    <div>Gallery Foto</div>
+    <div id="metaExpiry">-</div>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="strip-panel">
+    <span class="strip-label">Strip Foto</span>
+    <div class="strip-container" id="stripWrap">
+      <div class="strip-placeholder">Memuat strip...</div>
+    </div>
+
+    <a id="stripDownload" class="btn-strip-dl" download>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path d="M8 2v9M4 7l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 13h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      Download Strip
+    </a>
+
+    <div class="info-card">
+      <div><div class="info-key">Paket</div><div class="info-val" id="infoPackage">-</div></div>
+      <div><div class="info-key">Frame</div><div class="info-val" id="infoFrame">-</div></div>
+      <div><div class="info-key">Jumlah Foto</div><div class="info-val" id="infoCount">-</div></div>
+      <div><div class="info-key">Tersimpan hingga</div><div class="info-val" id="infoExpiry">-</div></div>
+    </div>
+
+    <p class="expiry-warn" id="expiryWarn">-</p>
+  </aside>
+
+  <div class="photos-panel">
+    <h1 class="photos-title">Foto Kamu</h1>
+    <p class="photos-sub">Tap foto untuk download langsung ke HP</p>
+    <div class="photo-grid" id="photoGrid">
+      <div class="empty">Memuat foto...</div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/session.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/gallery-page.js"></script>
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pilih Frame — Jonas Photo</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    .frame-wrap {
+      width:100%;
+      min-height:100vh;
+      min-height:100dvh;
+      height:100dvh;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .frame-main {
+      flex:1;
+      min-height:0;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(300px, 24vw);
+      overflow:hidden;
+    }
+
+    /* ─── Left Preview ─────────────────────────────────────────────────────── */
+    .frame-preview-panel {
+      grid-column:2;
+      grid-row:1;
+      display:flex; flex-direction:column;
+      background:var(--bg-card); border-left:1px solid var(--border);
+      position:relative;
+      overflow-y:auto;
+      min-height:0;
+    }
+    .frame-preview-panel::before {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(circle at center,#01395e06 0%,transparent 70%);
+      pointer-events:none;
+    }
+    .strip-preview-wrap {
+      position:relative; z-index:10; flex:1;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height:0;
+      gap:12px; padding:16px;
+    }
+    .strip-preview-label {
+      font-size:11px; font-weight:500; letter-spacing:0.12em;
+      text-transform:uppercase; color:var(--text-muted);
+    }
+
+    /* Strip container — aspect ratio sesuai frame 600:1800 = 1:3 */
+    .strip-real {
+      position:relative;
+      width:clamp(120px, 18vw, 180px);
+      aspect-ratio:1/3;
+      border-radius:4px;
+      overflow:hidden;
+      box-shadow:0 16px 48px #00000050;
+      transition:transform 0.4s cubic-bezier(0.4,0,0.2,1);
+      background:#dcdddd;
+    }
+    .strip-real:hover { transform:scale(1.01); }
+
+    /* Photo slots — posisi berdasarkan koordinat frame asli */
+    .strip-real-slot {
+      position:absolute;
+      left:1.667%; width:96.667%;
+      overflow:hidden;
+      background:#c7c9ca;
+    }
+    .strip-real-slot:nth-child(1) { top:5.556%;  height:29.667%; }
+    .strip-real-slot:nth-child(2) { top:35.667%; height:29.667%; }
+    .strip-real-slot:nth-child(3) { top:65.778%; height:29.667%; }
+
+    .strip-real-slot img { width:100%; height:100%; object-fit:cover; display:block; }
+    .strip-real-slot-placeholder {
+      width:100%; height:100%;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:6px;
+    }
+    .strip-real-slot-num {
+      font-size:9px; letter-spacing:0.1em;
+      text-transform:uppercase; color:#9b9d9c80;
+    }
+
+    /* Frame PNG overlay — di atas slot foto */
+    .strip-real-overlay {
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit:fill;
+      opacity:0.92;
+      filter:brightness(1.45) saturate(0.72) contrast(0.9);
+      pointer-events:none;
+      z-index:5;
+      display:none;
+    }
+
+    .no-frame-hint {
+      position:static; transform:none;
+      padding:12px 24px; border-top:1px solid var(--border);
+      font-size:12px; color:var(--text-muted);
+      white-space:normal; text-align:center; line-height:1.5;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      flex-shrink:0;
+    }
+
+    /* ─── Right Frame List ──────────────────────────────────────────────────── */
+    .frame-list-panel {
+      grid-column:1;
+      grid-row:1;
+      border-right:1px solid var(--border);
+      display:flex; flex-direction:column; overflow:hidden; background:var(--bg-card);
+      min-height:0;
+    }
+    .frame-list-header {
+      padding:24px; border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .frame-list-header p {
+      font-size:11px; font-weight:500; letter-spacing:0.15em;
+      text-transform:uppercase; color:var(--gold); margin-bottom:4px;
+    }
+    .frame-list-header h2 {
+      font-family:var(--font-display); font-size:20px;
+      font-weight:400; color:var(--cream); letter-spacing:-0.01em;
+    }
+
+    .frame-grid {
+      flex:1;
+      min-height:0;
+      overflow-y:auto;
+      padding:16px;
+      display:grid;
+      grid-template-columns:repeat(auto-fill, 150px);
+      justify-content:start;
+      gap:12px;
+      align-content:start;
+    }
+    .frame-item {
+      width:150px;
+      aspect-ratio:1/1;
+      border-radius:var(--radius-md); border:1px solid var(--border);
+      background:var(--bg-elevated); cursor:pointer;
+      transition:var(--transition); overflow:hidden; position:relative;
+    }
+    .frame-item::after {
+      content: attr(data-frame-name);
+      position:absolute;
+      left:6px;
+      right:6px;
+      bottom:6px;
+      padding:6px 8px;
+      border-radius:8px;
+      background:#dcddddee;
+      color:var(--cream);
+      border:1px solid #9b9d9c66;
+      font-size:10px;
+      letter-spacing:0.04em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      opacity:0;
+      transform:translateY(4px);
+      transition:opacity 0.2s ease, transform 0.2s ease;
+      pointer-events:none;
+      z-index:9;
+    }
+    .frame-item:hover::after,
+    .frame-item.selected::after {
+      opacity:1;
+      transform:translateY(0);
+    }
+    .frame-item:hover { border-color:var(--border-light); transform:translateY(-2px); box-shadow:var(--shadow-card); }
+    .frame-item.selected { border-color:var(--gold); box-shadow:0 0 0 1px var(--gold),var(--shadow-gold); }
+
+    /* Thumbnail frame — aspect ratio 1:3 agar terlihat full frame */
+    .frame-thumb {
+      width:100%; height:100%;
+      overflow:hidden; position:relative; background:var(--bg-elevated);
+    }
+    /* Gambar frame PNG — tampil penuh */
+    .frame-thumb img {
+      width:100%; height:100%;
+      object-fit:contain; object-position:center;
+      display:block;
+    }
+    /* Fallback color block */
+    .frame-thumb-fallback {
+      position:absolute; inset:0;
+      display:none; flex-direction:column;
+      justify-content:space-between; padding:10px 8px;
+    }
+    .frame-thumb-top  { text-align:center; font-size:9px; letter-spacing:0.1em; font-style:italic; }
+    .frame-thumb-slots { display:flex; flex-direction:column; gap:5px; flex:1; margin:8px 0; }
+    .frame-thumb-slot { flex:1; border-radius:2px; }
+    .frame-thumb-bottom { text-align:center; font-size:8px; letter-spacing:0.08em; }
+
+    .frame-item-info { display:none; }
+    .frame-item-name { font-size:12px; font-weight:500; color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .frame-item-slots { font-size:10px; color:var(--text-muted); margin-top:2px; letter-spacing:0.05em; }
+
+    .frame-check {
+      position:absolute; top:8px; right:8px;
+      width:22px; height:22px; border-radius:50%;
+      background:var(--gold); display:none; align-items:center; justify-content:center; z-index:10;
+    }
+    .frame-item.selected .frame-check { display:flex; }
+    .frame-loading {
+      grid-column:1/-1; display:flex; align-items:center; justify-content:center;
+      padding:40px; gap:12px; color:var(--text-muted); font-size:13px;
+    }
+
+    /* Timer */
+    .frame-timer-bar {
+      padding:10px 24px; border-top:1px solid var(--border);
+      display:flex; align-items:center; gap:8px;
+      flex-shrink:0; background:var(--bg-elevated);
+      width:100%;
+    }
+    .frame-timer-dot {
+      width:5px; height:5px; border-radius:50%;
+      background:var(--gold); flex-shrink:0; animation:pulse 1.5s ease infinite;
+    }
+    .frame-timer-dot.warning { background:var(--blush); animation:none; }
+    .frame-timer-label { font-size:12px; color:var(--text-secondary); flex:1; }
+    .frame-timer-display {
+      font-family:var(--font-display); font-size:24px;
+      font-weight:300; color:var(--cream); letter-spacing:-0.02em;
+    }
+    .frame-timer-display.warning { color:var(--blush); }
+
+    /* Action Bar */
+    .action-bar {
+      padding:16px 24px; border-top:1px solid var(--border);
+      display:flex; flex-direction:column; gap:8px; flex-shrink:0;
+      width:100%;
+      background:var(--bg-card);
+    }
+    .action-bar-info { display:flex; flex-direction:column; gap:3px; }
+    .action-bar-label { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); }
+    .action-bar-value { font-family:var(--font-display); font-size:16px; color:var(--cream); }
+    .action-bar .btn { width:100%; justify-content:center; }
+
+    @keyframes animUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .animate-in { opacity:0; animation:animUp 0.6s ease forwards; }
+
+    @media (max-width: 1024px) {
+      .frame-main {
+        grid-template-columns: minmax(0, 1fr) 280px;
+      }
+
+      .frame-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      }
+
+      .frame-item {
+        width: 100%;
+      }
+
+      .strip-real {
+        width: 156px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .frame-wrap {
+        min-height: 100vh;
+        min-height: 100dvh;
+        height: auto;
+        overflow: auto;
+      }
+
+      .frame-main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+        overflow: visible;
+      }
+
+      .frame-preview-panel {
+        grid-column: 1;
+        grid-row: 1;
+        border-left: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .frame-list-panel {
+        grid-column: 1;
+        grid-row: 2;
+        border-right: none;
+      }
+
+      .strip-preview-wrap {
+        padding: 12px;
+      }
+
+      .strip-real {
+        width: clamp(110px, 24vw, 140px);
+      }
+
+      .frame-grid {
+        padding: 12px;
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .frame-list-header,
+      .action-bar,
+      .frame-timer-bar {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .action-bar {
+        padding-top: 12px;
+        padding-bottom: 12px;
+      }
+
+      .frame-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .frame-item {
+        aspect-ratio: 5/6;
+      }
+    }
+
+    @media (min-width: 1600px) {
+      .frame-main {
+        grid-template-columns: 1fr 420px;
+      }
+
+      .strip-real {
+        width: 210px;
+      }
+
+      .frame-grid {
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      }
+    }
+
+    @media (max-height: 760px) {
+      .frame-list-header,
+      .frame-timer-bar,
+      .action-bar {
+        padding-top: 10px;
+        padding-bottom: 10px;
+      }
+
+      .strip-preview-wrap {
+        gap: 6px;
+      }
+
+      .strip-real {
+        width: clamp(100px, 18vh, 128px);
+      }
+
+      .no-frame-hint {
+        padding-top: 8px;
+        padding-bottom: 8px;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 520px) {
+      .frame-main {
+        grid-template-columns: 1fr 260px;
+      }
+
+      .frame-preview-panel {
+        border-bottom: none;
+        border-left: 1px solid var(--border);
+      }
+
+      .strip-real {
+        width: 110px;
+      }
+
+      .frame-list-header h2 {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame-wrap">
+    <nav class="nav">
+      <a href="photo.html" class="nav-logo">Jonas Photo</a>
+      <div class="nav-steps">
+        <div class="nav-step done"></div>
+        <div class="nav-step done"></div>
+        <div class="nav-step done"></div>
+        <div class="nav-step active"></div>
+        <div class="nav-step"></div>
+        <div class="nav-step"></div>
+      </div>
+      <span class="label">Langkah 4 / 6</span>
+    </nav>
+
+    <div class="frame-main">
+
+      <!-- Left: Strip Preview dengan frame PNG asli -->
+      <div class="frame-preview-panel">
+        <div class="strip-preview-wrap">
+          <span class="strip-preview-label">Preview Strip</span>
+
+          <div class="strip-real animate-in" id="stripReal">
+            <!-- Slot foto (di bawah frame overlay) -->
+            <div class="strip-real-slot" id="prevSlot1">
+              <div class="strip-real-slot-placeholder">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="2" y="4" width="16" height="12" rx="2" stroke="#9b9d9c50" stroke-width="1.5"/>
+                  <circle cx="10" cy="10" r="2.5" stroke="#9b9d9c50" stroke-width="1.5"/>
+                </svg>
+                <span class="strip-real-slot-num">foto 1</span>
+              </div>
+            </div>
+            <div class="strip-real-slot" id="prevSlot2">
+              <div class="strip-real-slot-placeholder">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="2" y="4" width="16" height="12" rx="2" stroke="#9b9d9c50" stroke-width="1.5"/>
+                  <circle cx="10" cy="10" r="2.5" stroke="#9b9d9c50" stroke-width="1.5"/>
+                </svg>
+                <span class="strip-real-slot-num">foto 2</span>
+              </div>
+            </div>
+            <div class="strip-real-slot" id="prevSlot3">
+              <div class="strip-real-slot-placeholder">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="2" y="4" width="16" height="12" rx="2" stroke="#9b9d9c50" stroke-width="1.5"/>
+                  <circle cx="10" cy="10" r="2.5" stroke="#9b9d9c50" stroke-width="1.5"/>
+                </svg>
+                <span class="strip-real-slot-num">foto 3</span>
+              </div>
+            </div>
+
+            <!-- Frame PNG overlay — tampil di atas slot foto -->
+            <img class="strip-real-overlay" id="frameOverlay" alt="frame" />
+          </div>
+
+          <span class="strip-preview-label" id="selectedFrameName" style="color:var(--gold)">
+            Belum memilih frame
+          </span>
+        </div>
+
+        <div class="no-frame-hint" id="noFrameHint">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1l1.5 3 3.5.5-2.5 2.5.5 3.5L7 9l-3 1.5.5-3.5L2 4.5 5.5 4z"
+              stroke="var(--text-muted)" stroke-width="1.2" stroke-linejoin="round"/>
+          </svg>
+          Pilih frame dari panel kiri
+        </div>
+
+        <div class="frame-timer-bar">
+          <div class="frame-timer-dot" id="frameTimerDot"></div>
+          <span class="frame-timer-label">Waktu memilih frame</span>
+          <span class="frame-timer-display" id="frameTimerDisplay">01:30</span>
+        </div>
+
+        <div class="action-bar">
+          <div class="action-bar-info">
+            <span class="action-bar-label">Frame dipilih</span>
+            <span class="action-bar-value" id="actionFrameName">Belum dipilih</span>
+          </div>
+          <button class="btn btn-primary" id="nextBtn" onclick="goToSelect()" disabled>
+            Pilih Foto →
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Frame List -->
+      <div class="frame-list-panel">
+        <div class="frame-list-header">
+          <p>Step 04</p>
+          <h2>Pilih frame favoritmu</h2>
+        </div>
+
+        <div class="frame-grid" id="frameGrid">
+          <div class="frame-loading">
+            <div class="spinner" style="border-top-color:var(--gold)"></div>
+            Memuat frame...
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="assets/js/session.js"></script>
+  <script src="assets/js/shared.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/frame-page.js"></script>
+</body>
+</html>

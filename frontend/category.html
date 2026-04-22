@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pilih Kategori — Jonas Photo</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <style>
+    .category-wrap {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ─── Main ─────────────────────────────────────────────────────────────── */
+    .category-main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      overflow: hidden;
+    }
+
+    /* ─── Left Sidebar ──────────────────────────────────────────────────────── */
+    .category-sidebar {
+      border-right: 1px solid var(--border);
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .category-sidebar::before {
+      content: '';
+      position: absolute;
+      bottom: -100px;
+      left: -100px;
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, #01395e08 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .sidebar-step {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .sidebar-title {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 4vw, 52px);
+      font-weight: 300;
+      line-height: 1.05;
+      color: var(--cream);
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    .sidebar-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .sidebar-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      font-weight: 300;
+      margin-bottom: 40px;
+    }
+
+    .sidebar-divider {
+      width: 32px;
+      height: 1px;
+      background: var(--border-light);
+      margin-bottom: 32px;
+    }
+
+    .sidebar-features {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .feature-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ─── Right Content ─────────────────────────────────────────────────────── */
+    .category-content {
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    /* ─── Category Cards ────────────────────────────────────────────────────── */
+    .category-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .category-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: var(--transition);
+      background: linear-gradient(135deg, #01395e06 0%, transparent 60%);
+    }
+
+    .category-card:hover::before,
+    .category-card.selected::before {
+      opacity: 1;
+    }
+
+    .category-card:hover {
+      border-color: var(--border-light);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card);
+    }
+
+    .category-card.selected {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 1px var(--gold), var(--shadow-gold);
+    }
+
+    .category-card.vip-card.selected {
+      border-color: var(--blush);
+      box-shadow: 0 0 0 1px var(--blush), 0 0 40px #8a96ae18;
+    }
+
+    .category-card.vip-card:hover {
+      border-color: #8a96ae44;
+    }
+
+    /* Card Left */
+    .card-left {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .card-badge--regular {
+      background: var(--gold-dim);
+      color: var(--gold-light);
+      border: 1px solid #01395e30;
+    }
+
+    .card-badge--vip {
+      background: var(--blush-dim);
+      color: var(--blush);
+      border: 1px solid #8a96ae30;
+    }
+
+    .card-name {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 400;
+      color: var(--cream);
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+
+    .card-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 300;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .card-specs {
+      display: flex;
+      gap: 24px;
+    }
+
+    .card-spec {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .card-spec-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .card-spec-value {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--cream);
+    }
+
+    /* Card Right - Price */
+    .card-right {
+      position: relative;
+      z-index: 1;
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .card-price {
+      font-family: var(--font-display);
+      font-size: 44px;
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .card-price--regular { color: var(--gold); }
+    .card-price--vip     { color: var(--blush); }
+
+    .card-price-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+
+    .card-select-indicator {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .category-card.selected .card-select-indicator {
+      border-color: var(--gold);
+      background: var(--gold);
+    }
+
+    .category-card.vip-card.selected .card-select-indicator {
+      border-color: var(--blush);
+      background: var(--blush);
+    }
+
+    .check-icon {
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .category-card.selected .check-icon {
+      opacity: 1;
+    }
+
+    /* ─── Bottom Action Bar ─────────────────────────────────────────────────── */
+    .action-bar {
+      padding: 20px 48px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+    }
+
+    .action-bar-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .action-bar-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    .action-bar-selected {
+      font-family: var(--font-display);
+      font-size: 20px;
+      color: var(--cream);
+      transition: var(--transition);
+    }
+
+    /* ─── Entry Animations ──────────────────────────────────────────────────── */
+    .animate-in {
+      opacity: 0;
+      animation: animUp 0.6s ease forwards;
+    }
+
+    .animate-in:nth-child(1) { animation-delay: 0.05s; }
+    .animate-in:nth-child(2) { animation-delay: 0.15s; }
+
+    @keyframes animUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 1100px) {
+      .category-sidebar,
+      .category-content {
+        padding: 30px 24px;
+      }
+
+      .category-card {
+        padding: 24px;
+      }
+
+      .card-price {
+        font-size: 34px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .category-main {
+        grid-template-columns: 1fr;
+      }
+
+      .category-sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        justify-content: flex-start;
+        gap: 14px;
+      }
+
+      .sidebar-features {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+
+      .feature-item {
+        min-width: 170px;
+      }
+
+      .category-card {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .card-right {
+        align-items: flex-start;
+        text-align: left;
+      }
+
+      .action-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 14px 16px;
+      }
+
+      .action-bar .btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .category-content,
+      .category-sidebar {
+        padding: 18px 14px;
+      }
+
+      .card-specs {
+        gap: 14px;
+      }
+
+      .card-name {
+        font-size: 28px;
+      }
+
+      .card-spec-value {
+        font-size: 18px;
+      }
+    }
+
+    @media (min-width: 1600px) {
+      .category-main {
+        grid-template-columns: 1fr 2.3fr;
+      }
+
+      .category-content,
+      .category-sidebar {
+        padding-left: 56px;
+        padding-right: 56px;
+      }
+    }
+
+    @media (max-height: 760px) {
+      .category-sidebar,
+      .category-content {
+        padding-top: 16px;
+        padding-bottom: 16px;
+      }
+
+      .sidebar-desc {
+        margin-bottom: 20px;
+      }
+
+      .category-card {
+        padding: 18px;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 520px) {
+      .category-main {
+        grid-template-columns: 0.95fr 1.05fr;
+      }
+
+      .sidebar-features {
+        gap: 8px;
+      }
+
+      .feature-item {
+        font-size: 12px;
+      }
+
+      .card-name {
+        font-size: 24px;
+      }
+
+      .card-description {
+        margin-bottom: 10px;
+      }
+
+      .card-spec-value {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="category-wrap">
+
+    <!-- ─── Nav ───────────────────────────────────────────────────────────── -->
+    <nav class="nav">
+      <a href="index.html" class="nav-logo">Jonas Photo</a>
+      <div class="nav-steps">
+        <div class="nav-step active"></div>
+        <div class="nav-step"></div>
+        <div class="nav-step"></div>
+        <div class="nav-step"></div>
+        <div class="nav-step"></div>
+        <div class="nav-step"></div>
+      </div>
+      <span class="label">Langkah 1 / 6</span>
+    </nav>
+
+    <!-- ─── Main ──────────────────────────────────────────────────────────── -->
+    <div class="category-main">
+
+      <!-- Sidebar -->
+      <aside class="category-sidebar">
+        <p class="sidebar-step">Step 01</p>
+        <h2 class="sidebar-title">Pilih<br/><em>kategori</em><br/>sesi foto</h2>
+        <p class="sidebar-desc">
+          Tentukan paket yang sesuai dengan kebutuhanmu.
+          Semakin lama sesi, semakin banyak momen yang bisa diabadikan.
+        </p>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-features">
+          <div class="feature-item">
+            <div class="feature-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v4l2.5 2.5" stroke="var(--gold)"
+                  stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="8" cy="8" r="6" stroke="var(--gold)" stroke-width="1.5"/>
+              </svg>
+            </div>
+            Sesi dibatasi sesuai durasi paket
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <rect x="2" y="4" width="12" height="9" rx="1.5"
+                  stroke="var(--gold)" stroke-width="1.5"/>
+                <path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1"
+                  stroke="var(--gold)" stroke-width="1.5"/>
+              </svg>
+            </div>
+            3 strip foto per sesi
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 3v10M3 8l5 5 5-5" stroke="var(--gold)"
+                  stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            Download langsung setelah selesai
+          </div>
+        </div>
+      </aside>
+
+      <!-- Cards -->
+      <div class="category-content">
+
+        <!-- Regular Card -->
+        <div class="category-card animate-in"
+             data-category="regular"
+             onclick="selectCategory(this, 'regular')">
+          <div class="card-left">
+            <div class="card-header">
+              <span class="card-badge card-badge--regular">Regular</span>
+            </div>
+            <div class="card-name">Regular</div>
+            <p class="card-description">
+              Paket ideal untuk sesi foto santai bersama teman atau pasangan.
+              Waktu yang cukup untuk mengabadikan berbagai ekspresi terbaikmu.
+            </p>
+            <div class="card-specs">
+              <div class="card-spec">
+                <span class="card-spec-label">Durasi</span>
+                <span class="card-spec-value">5 menit</span>
+              </div>
+              <div class="card-spec">
+                <span class="card-spec-label">Strip</span>
+                <span class="card-spec-value">3 foto</span>
+              </div>
+              <div class="card-spec">
+                <span class="card-spec-label">Download</span>
+                <span class="card-spec-value">✓</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-right">
+            <div>
+              <div class="card-price card-price--regular">35K</div>
+              <div class="card-price-label">per sesi</div>
+            </div>
+            <div class="card-select-indicator">
+              <svg class="check-icon" width="12" height="12"
+                   viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="#dcdddd"
+                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIP Card -->
+        <div class="category-card vip-card animate-in"
+             data-category="vip"
+             onclick="selectCategory(this, 'vip')">
+          <div class="card-left">
+            <div class="card-header">
+              <span class="card-badge card-badge--vip">VIP</span>
+            </div>
+            <div class="card-name">VIP</div>
+            <p class="card-description">
+              Pengalaman foto premium dengan waktu lebih leluasa.
+              Cocok untuk grup atau ketika kamu ingin eksplorasi lebih banyak pose dan gaya.
+            </p>
+            <div class="card-specs">
+              <div class="card-spec">
+                <span class="card-spec-label">Durasi</span>
+                <span class="card-spec-value">8 menit</span>
+              </div>
+              <div class="card-spec">
+                <span class="card-spec-label">Strip</span>
+                <span class="card-spec-value">3 foto</span>
+              </div>
+              <div class="card-spec">
+                <span class="card-spec-label">Download</span>
+                <span class="card-spec-value">✓</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-right">
+            <div>
+              <div class="card-price card-price--vip">45K</div>
+              <div class="card-price-label">per sesi</div>
+            </div>
+            <div class="card-select-indicator">
+              <svg class="check-icon" width="12" height="12"
+                   viewBox="0 0 12 12" fill="none">
+                <path d="M2 6l3 3 5-5" stroke="#dcdddd"
+                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ─── Action Bar ─────────────────────────────────────────────────────── -->
+    <div class="action-bar">
+      <div class="action-bar-info">
+        <span class="action-bar-label">Pilihan kamu</span>
+        <span class="action-bar-selected" id="selectedLabel">
+          Belum dipilih
+        </span>
+      </div>
+      <button class="btn btn-primary btn-lg"
+              id="nextBtn"
+              onclick="goToPayment()"
+              disabled>
+        Lanjut ke Pembayaran
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor"
+            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+  </div>
+
+  <script src="assets/js/session.js"></script>
+  <script src="assets/js/shared.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/category-page.js"></script>
+</body>
+</html>
