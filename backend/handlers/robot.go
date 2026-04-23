@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/draw"
+	"image/jpeg"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -14,6 +18,36 @@ import (
 
 	"github.com/google/uuid"
 )
+
+func flipJPEGHorizontal(frame []byte) []byte {
+	img, _, err := image.Decode(bytes.NewReader(frame))
+	if err != nil {
+		return frame
+	}
+
+	b := img.Bounds()
+	w := b.Dx()
+	h := b.Dy()
+	if w <= 1 || h <= 1 {
+		return frame
+	}
+
+	src := image.NewRGBA(b)
+	draw.Draw(src, b, img, b.Min, draw.Src)
+	dst := image.NewRGBA(b)
+
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			dst.Set(x+b.Min.X, y+b.Min.Y, src.At((w-1-x)+b.Min.X, y+b.Min.Y))
+		}
+	}
+
+	var out bytes.Buffer
+	if err := jpeg.Encode(&out, dst, &jpeg.Options{Quality: 85}); err != nil {
+		return frame
+	}
+	return out.Bytes()
+}
 
 // GET /api/robot/status
 // Cek apakah kamera terhubung
@@ -112,6 +146,8 @@ func GetLiveView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	frame = flipJPEGHorizontal(frame)
+
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 	w.Header().Set("Pragma", "no-cache")
@@ -137,6 +173,8 @@ func StreamLiveView(w http.ResponseWriter, r *http.Request) {
 				time.Sleep(500 * time.Millisecond)
 				continue
 			}
+
+			frame = flipJPEGHorizontal(frame)
 
 			fmt.Fprintf(w, "--frame\r\nContent-Type: image/jpeg\r\n\r\n")
 			w.Write(frame)

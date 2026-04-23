@@ -16,6 +16,14 @@ var sessionTimer = null
 var cameraMode = 'canon'
 var backendBase = window.APP_BASE_URL || 'http://localhost:8080'
 
+function applyMirrorPreview(el) {
+  if (!el) return
+  el.style.transform = 'scaleX(-1)'
+  el.style.webkitTransform = 'scaleX(-1)'
+  el.style.transformOrigin = 'center center'
+  el.style.webkitTransformOrigin = 'center center'
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async function() {
   session = requireSession('category.html')
@@ -223,6 +231,7 @@ async function initBrowserCamera(updateMode) {
     var video = document.getElementById('videoEl')
     video.srcObject = stream
     video.style.display = 'block'
+    applyMirrorPreview(video)
     document.getElementById('cameraPlaceholder').style.display = 'none'
   } catch (err) {
     document.getElementById('videoEl').style.display = 'none'
@@ -272,10 +281,7 @@ async function captureBrowser() {
   canvas.width = video.videoWidth
   canvas.height = video.videoHeight
   var ctx = canvas.getContext('2d')
-  ctx.save()
-  ctx.scale(-1, 1)
-  ctx.drawImage(video, -canvas.width, 0)
-  ctx.restore()
+  ctx.drawImage(video, 0, 0)
 
   var blob = await new Promise(function(resolve) {
     canvas.toBlob(resolve, 'image/jpeg', 0.92)
