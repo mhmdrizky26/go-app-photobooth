@@ -85,7 +85,7 @@ func Setup(storagePath string) http.Handler {
 			r.Post("/capture", handlers.RobotCapture)
 			r.Get("/liveview", handlers.GetLiveView)
 			r.Get("/liveview/stream", handlers.StreamLiveView)
-			r.Get("/session/{sessionID}", handlers.GetRobotSessionPhotos)
+			r.Get("/session/{sessionID}", handlers.GetSessionPhotos)
 
 			// Enable / disable robot via ngrok
 			// POST /api/robot/enable  ← dipanggil otomatis setelah payment lunas
@@ -98,6 +98,13 @@ func Setup(storagePath string) http.Handler {
 
 			// Trigger preset gerakan robot
 			r.Post("/preset", handlers.TriggerPreset)
+
+			// Robot webhook for external reports (preset started/ended)
+			r.Post("/webhook", handlers.RobotWebhook)
+
+			// Legacy / robot lifecycle endpoints used by robot firmware
+			r.Post("/moving", handlers.RobotMoving)
+			r.Post("/done", handlers.RobotDone)
 
 			// Cek konfigurasi robot saat ini
 			r.Get("/config", handlers.GetRobotConfig)

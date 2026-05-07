@@ -97,7 +97,7 @@ func digiCamReadFirstAvailable(paths []string) ([]byte, error) {
 			continue
 		}
 
-		body, err := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 5<<20))
 		resp.Body.Close()
 		if err != nil {
 			lastErr = err
@@ -149,7 +149,7 @@ func CheckCamera() (*CameraStatus, error) {
 		return &CameraStatus{Connected: false}, nil
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 5<<20))
 	if err != nil {
 		return &CameraStatus{Connected: false}, nil
 	}

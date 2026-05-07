@@ -40,72 +40,16 @@ func ApplyVoucher(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Cari voucher di DB
-	var v models.Voucher
-	var expiresAt *time.Time
-	var isActiveInt int
-
-	err = database.DB.QueryRow(`
-		SELECT 
-			code, COALESCE(description, ''), discount_type, discount_value,
-			min_price, max_uses, used_count, is_active, expires_at
-		FROM vouchers 
-		WHERE code = ?`, req.VoucherCode,
-	).Scan(
-		&v.Code,
-		&v.Description,
-		&v.DiscountType,
-		&v.DiscountValue,
-		&v.MinPrice,
-		&v.MaxUses,
-		&v.UsedCount,
-		&isActiveInt,
-		&expiresAt,
-	)
-
+	// Get and validate voucher
+	v, err := getAndValidateVoucher(req.VoucherCode, session.Price)
 	if err != nil {
-		respondInvalidVoucher(w, "Voucher tidak ditemukan")
+		respondInvalidVoucher(w, err.Error())
 		return
 	}
 
-	v.IsActive = isActiveInt == 1
-	v.ExpiresAt = expiresAt
-
-	// Validasi voucher
-	if !v.IsActive {
-		respondInvalidVoucher(w, "Voucher tidak aktif")
-		return
-	}
-
-	if v.ExpiresAt != nil && time.Now().After(*v.ExpiresAt) {
-		respondInvalidVoucher(w, "Voucher sudah kedaluwarsa")
-		return
-	}
-
-	if v.UsedCount >= v.MaxUses {
-		respondInvalidVoucher(w, "Voucher sudah mencapai batas penggunaan")
-		return
-	}
-
-	if session.Price < v.MinPrice {
-		respondInvalidVoucher(w, fmt.Sprintf("Minimum pembelian Rp %s untuk voucher ini", formatRupiah(v.MinPrice)))
-		return
-	}
-
-	// Hitung diskon
-	discountAmount := 0
-	if v.DiscountType == models.DiscountPercent {
-		discountAmount = session.Price * v.DiscountValue / 100
-	} else {
-		discountAmount = v.DiscountValue
-	}
-
-	// Pastikan diskon tidak melebihi harga
-	if discountAmount > session.Price {
-		discountAmount = session.Price
-	}
-
-	finalPrice := session.Price - discountAmount
+	// Calculate final price after discount
+	discountAmount := session.Price - calculateFinalPrice(session.Price, *v)
+	finalPrice := calculateFinalPrice(session.Price, *v)
 
 	tx, err := database.DB.Begin()
 	if err != nil {
@@ -182,10 +126,10 @@ func ApplyVoucher(w http.ResponseWriter, r *http.Request) {
 
 	respondJSON(w, http.StatusOK, models.SuccessResponse(models.ApplyVoucherResponse{
 		Valid:          true,
-		Message:        fmt.Sprintf("Voucher berhasil! Hemat %s", formatDiscount(v)),
+		Message:        fmt.Sprintf("Voucher berhasil! Hemat %s", formatDiscount(*v)),
 		DiscountAmount: discountAmount,
 		FinalPrice:     finalPrice,
-		Voucher:        &v,
+		Voucher:        v,
 	}))
 }
 
@@ -396,4 +340,72 @@ func respondInvalidVoucher(w http.ResponseWriter, message string) {
 		Valid:   false,
 		Message: message,
 	}))
+}
+
+// Helper: Lookup and validate voucher code
+func getAndValidateVoucher(code string, sessionPrice int) (*models.Voucher, error) {
+	var v models.Voucher
+	var expiresAt *time.Time
+	var isActiveInt int
+
+	err := database.DB.QueryRow(`
+		SELECT 
+			code, COALESCE(description, ''), discount_type, discount_value,
+			min_price, max_uses, used_count, is_active, expires_at
+		FROM vouchers 
+		WHERE code = ?`, code,
+	).Scan(
+		&v.Code,
+		&v.Description,
+		&v.DiscountType,
+		&v.DiscountValue,
+		&v.MinPrice,
+		&v.MaxUses,
+		&v.UsedCount,
+		&isActiveInt,
+		&expiresAt,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("voucher tidak ditemukan")
+	}
+
+	v.IsActive = isActiveInt == 1
+	v.ExpiresAt = expiresAt
+
+	// Validate voucher state
+	if !v.IsActive {
+		return nil, fmt.Errorf("voucher tidak aktif")
+	}
+
+	if v.ExpiresAt != nil && time.Now().After(*v.ExpiresAt) {
+		return nil, fmt.Errorf("voucher sudah kedaluwarsa")
+	}
+
+	if v.UsedCount >= v.MaxUses {
+		return nil, fmt.Errorf("voucher sudah mencapai batas penggunaan")
+	}
+
+	if sessionPrice < v.MinPrice {
+		return nil, fmt.Errorf("minimum pembelian Rp %s untuk voucher ini", formatRupiah(v.MinPrice))
+	}
+
+	return &v, nil
+}
+
+// Helper: Calculate final price after discount
+func calculateFinalPrice(sessionPrice int, v models.Voucher) int {
+	discountAmount := 0
+	if v.DiscountType == models.DiscountPercent {
+		discountAmount = sessionPrice * v.DiscountValue / 100
+	} else {
+		discountAmount = v.DiscountValue
+	}
+
+	// Ensure discount doesn't exceed price
+	if discountAmount > sessionPrice {
+		discountAmount = sessionPrice
+	}
+
+	return sessionPrice - discountAmount
 }

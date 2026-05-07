@@ -104,5 +104,13 @@ func TriggerPreset(preset int) error {
 		return fmt.Errorf("gagal encode preset: %w", err)
 	}
 
-	return callRobotAPI(http.MethodPost, "/robot/preset", body)
+	if err := callRobotAPI(http.MethodPost, "/robot/preset", body); err != nil {
+		return err
+	}
+
+	if config.App != nil {
+		config.App.SetCurrentPreset(preset)
+	}
+
+	return nil
 }

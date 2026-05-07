@@ -57,7 +57,8 @@ async function createPayment() {
       session.status = 'paid'
       session.final_price = result.session.final_price
       Session.setSession(session)
-      setTimeout(() => navigate('photo.html'), 1200)
+      markInitiationAudioPlayed(session.id)
+      queueTransitionToPhoto('inisiasi.mp3')
       return
     }
 
@@ -121,13 +122,57 @@ function startPolling() {
         const updatedSession = await API.getSession(session.id)
         Session.setSession(updatedSession)
 
-        // Redirect ke halaman foto setelah 2 detik
-        setTimeout(() => navigate('photo.html'), 2000)
+        markInitiationAudioPlayed(session.id)
+        queueTransitionToPhoto('inisiasi.mp3')
       }
     } catch (err) {
       console.warn('Polling error:', err)
     }
   }, 3000) // setiap 3 detik
+}
+
+function playAudioThenNavigate(audioName, nextPage) {
+  const fallbackDelayMs = 6000
+  let navigated = false
+
+  function goNext() {
+    if (navigated) return
+    navigated = true
+    navigate(nextPage)
+  }
+
+  const audio = playAudio(audioName)
+  if (!audio) {
+    setTimeout(goNext, 1200)
+    return
+  }
+
+  const durationMs = Number.isFinite(audio.duration) && audio.duration > 0
+    ? Math.ceil(audio.duration * 1000)
+    : fallbackDelayMs
+
+  audio.addEventListener('ended', goNext, { once: true })
+  audio.addEventListener('error', goNext, { once: true })
+
+  setTimeout(goNext, Math.max(durationMs + 250, 1200))
+}
+
+function queueTransitionToPhoto(audioName) {
+  try {
+    sessionStorage.setItem('photobooth.transition.audio', audioName || '')
+    sessionStorage.setItem('photobooth.transition.target', 'photo.html')
+  } catch (e) {}
+  navigate('photo.html')
+}
+
+function initiationAudioKey(sessionID) {
+  return 'photobooth.initiationPlayed.' + sessionID
+}
+
+function markInitiationAudioPlayed(sessionID) {
+  try {
+    sessionStorage.setItem(initiationAudioKey(sessionID), '1')
+  } catch (e) {}
 }
 
 function stopPolling() {

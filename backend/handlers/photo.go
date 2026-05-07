@@ -193,11 +193,14 @@ func SelectPhotos(w http.ResponseWriter, r *http.Request) {
 	// Validasi semua foto milik sesi ini
 	for _, photoID := range req.PhotoIDs {
 		var count int
-		database.DB.QueryRow(`
+		if err := database.DB.QueryRow(`
 			SELECT COUNT(*) FROM photos 
 			WHERE id = ? AND session_id = ? AND type = 'raw'`,
 			photoID, req.SessionID,
-		).Scan(&count)
+		).Scan(&count); err != nil {
+			respondError(w, http.StatusInternalServerError, "Gagal validasi foto")
+			return
+		}
 
 		if count == 0 {
 			respondError(w, http.StatusBadRequest, fmt.Sprintf("Foto %s tidak ditemukan di sesi ini", photoID))
@@ -261,7 +264,6 @@ func GetFrames(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/photo/compose
 // Gabungkan 3 foto yang dipilih dengan frame → hasil strip akhir
-// POST /api/photo/compose
 func ComposeFrame(w http.ResponseWriter, r *http.Request) {
 	var req models.ComposeFrameRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -269,40 +271,22 @@ func ComposeFrame(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.PhotoIDs) != 3 {
-		respondError(w, http.StatusBadRequest, "Harus ada tepat 3 foto")
-		return
-	}
-
-	session, err := GetSessionByID(req.SessionID)
+	// Validate request and session
+	_, err := validateComposeRequest(req)
 	if err != nil {
-		respondError(w, http.StatusNotFound, "Session tidak ditemukan")
-		return
-	}
-
-	allowedStatus := session.Status == models.StatusShooting ||
-		session.Status == models.StatusPaid ||
-		session.Status == models.StatusCompleted
-
-	if !allowedStatus {
-		respondError(w, http.StatusBadRequest, "Status sesi tidak valid untuk compose")
-		return
-	}
-
-	// Ambil file_path tiap foto dari DB
-	photoPaths := make([]string, 0, 3)
-	for _, photoID := range req.PhotoIDs {
-		var filePath string
-		err := database.DB.QueryRow(
-			`SELECT file_path FROM photos WHERE id = ? AND session_id = ?`,
-			photoID, req.SessionID,
-		).Scan(&filePath)
-		if err != nil {
-			respondError(w, http.StatusBadRequest,
-				fmt.Sprintf("Foto %s tidak ditemukan", photoID))
-			return
+		if err.Error() == "session tidak ditemukan" {
+			respondError(w, http.StatusNotFound, err.Error())
+		} else {
+			respondError(w, http.StatusBadRequest, err.Error())
 		}
-		photoPaths = append(photoPaths, filePath)
+		return
+	}
+
+	// Load file paths for all photos
+	photoPaths, err := loadComposedPhotoPaths(req.SessionID, req.PhotoIDs)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	// Buat folder hasil
@@ -337,8 +321,9 @@ func ComposeFrame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update sesi
-	if _, err := database.DB.Exec(`UPDATE sessions SET frame_id = ?, status = 'completed' WHERE id = ?`,
-		req.FrameID, req.SessionID); err != nil {
+	completedAt := time.Now().UTC()
+	if _, err := database.DB.Exec(`UPDATE sessions SET frame_id = ?, status = 'completed', completed_at = ? WHERE id = ?`,
+		req.FrameID, completedAt, req.SessionID); err != nil {
 		respondError(w, http.StatusInternalServerError, "Gagal memperbarui sesi")
 		return
 	}
@@ -450,6 +435,45 @@ func formatFrameName(s string) string {
 		}
 	}
 	return strings.Join(words, " ")
+}
+
+// Helper: Validate ComposeFrame request and session state
+func validateComposeRequest(req models.ComposeFrameRequest) (*models.Session, error) {
+	if len(req.PhotoIDs) != 3 {
+		return nil, fmt.Errorf("harus ada tepat 3 foto")
+	}
+
+	session, err := GetSessionByID(req.SessionID)
+	if err != nil {
+		return nil, fmt.Errorf("session tidak ditemukan")
+	}
+
+	allowedStatus := session.Status == models.StatusShooting ||
+		session.Status == models.StatusPaid ||
+		session.Status == models.StatusCompleted
+
+	if !allowedStatus {
+		return nil, fmt.Errorf("status sesi tidak valid untuk compose")
+	}
+
+	return session, nil
+}
+
+// Helper: Load file paths for all photos in compose request
+func loadComposedPhotoPaths(sessionID string, photoIDs []string) ([]string, error) {
+	photoPaths := make([]string, 0, 3)
+	for _, photoID := range photoIDs {
+		var filePath string
+		err := database.DB.QueryRow(
+			`SELECT file_path FROM photos WHERE id = ? AND session_id = ?`,
+			photoID, sessionID,
+		).Scan(&filePath)
+		if err != nil {
+			return nil, fmt.Errorf("foto %s tidak ditemukan", photoID)
+		}
+		photoPaths = append(photoPaths, filePath)
+	}
+	return photoPaths, nil
 }
 
 func updateSelectedPhotos(sessionID string, photoIDs []string) error {

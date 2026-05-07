@@ -98,8 +98,8 @@ func UpdateSessionStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err := database.DB.Exec(
-		`UPDATE sessions SET status = ? WHERE id = ?`,
-		string(body.Status), sessionID,
+		`UPDATE sessions SET status = ?, completed_at = CASE WHEN ? = 'completed' THEN COALESCE(completed_at, ?) ELSE completed_at END WHERE id = ?`,
+		string(body.Status), string(body.Status), time.Now().UTC(), sessionID,
 	)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "Failed to update session")

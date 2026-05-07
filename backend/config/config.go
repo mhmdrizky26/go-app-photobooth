@@ -5,9 +5,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 type Config struct {
+	mu                   sync.RWMutex
 	AppPort              string
 	AppEnv               string
 	MidtransServerKey    string
@@ -20,6 +23,59 @@ type Config struct {
 	FrontendURL          string
 	RobotAPIURL          string
 	RobotEnabled         bool
+	CurrentPreset        int
+	AutoCaptureAt        time.Time
+}
+
+func (c *Config) SetCurrentPreset(currentPreset int) {
+	if c == nil {
+		return
+	}
+
+	c.mu.Lock()
+	c.CurrentPreset = currentPreset
+	c.mu.Unlock()
+}
+
+func (c *Config) GetCurrentPreset() int {
+	if c == nil {
+		return 0
+	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.CurrentPreset
+}
+
+func (c *Config) SetAutoCaptureAt(autoCaptureAt time.Time) {
+	if c == nil {
+		return
+	}
+
+	c.mu.Lock()
+	c.AutoCaptureAt = autoCaptureAt
+	c.mu.Unlock()
+}
+
+func (c *Config) GetAutoCaptureAt() time.Time {
+	if c == nil {
+		return time.Time{}
+	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.AutoCaptureAt
+}
+
+func (c *Config) ResetRobotState() {
+	if c == nil {
+		return
+	}
+
+	c.mu.Lock()
+	c.CurrentPreset = 0
+	c.AutoCaptureAt = time.Time{}
+	c.mu.Unlock()
 }
 
 var App *Config
@@ -42,6 +98,8 @@ func Load() {
 		FrontendURL:          getEnv("FRONTEND_URL", "http://localhost:3000"),
 		RobotAPIURL:          getEnv("ROBOT_API_URL", ""),
 		RobotEnabled:         getEnv("ROBOT_ENABLED", "false") == "true",
+		CurrentPreset:        0,
+		AutoCaptureAt:        time.Time{},
 	}
 }
 

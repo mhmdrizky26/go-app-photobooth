@@ -50,18 +50,18 @@ const API = {
   createPayment(sessionID)     { return this.post('/payment/create', { session_id: sessionID }) },
   getPaymentStatus(orderID)    { return this.get(`/payment/status/${orderID}`) },
 
+  updateSessionStatus(sessionID, status) {
+    return this.patch(`/session/${sessionID}/status`, { status })
+  },
+
   applyVoucher(sessionID, code) {
     return this.post('/voucher/apply', { session_id: sessionID, voucher_code: code })
-  },
-  removeVoucher(sessionID) {
-    return this.post('/voucher/remove', { session_id: sessionID })
   },
 
   getFrames()                  { return this.get('/frames') },
   getGallery(sessionID)        { return this.get(`/gallery/${sessionID}`) },
 
   getSessionPhotos(sessionID)  { return this.get(`/photo/session/${sessionID}`) },
-  getFramedPhotos(sessionID)   { return this.get(`/photo/session/${sessionID}/framed`) },
 
   selectPhotos(sessionID, photoIDs) {
     return this.post('/photo/select', { session_id: sessionID, photo_ids: photoIDs })
@@ -87,6 +87,13 @@ const API = {
     if (!data.success) throw new Error(data.error || 'Gagal upload foto')
     return data.data
   },
+
+  // Robot / Camera endpoints
+  getRobotStatus()             { return this.get('/robot/status') },
+  getRobotConfig()             { return this.get('/robot/config') },
+  captureRobot(sessionID)      { return this.post('/robot/capture', { session_id: sessionID }) },
+  enableRobot()                { return this.post('/robot/enable') },
+  disableRobot()               { return this.post('/robot/disable') },
 }
 
 // ─── UI Helpers ───────────────────────────────────────────────────────────────
